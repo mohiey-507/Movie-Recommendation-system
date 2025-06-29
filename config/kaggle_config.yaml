@@ -1,0 +1,4 @@
+# Paths
+data_dir: "/kaggle/input"
+model_dir: "/kaggle/working/models"
+log_dir: "/kaggle/working/logs"

@@ -1,0 +1,11 @@
+# Paths
+data_dir: "./data"
+model_dir: "./models"
+log_dir: "./logs"
+
+# MovieLens Dataset Configuration
+movielens:
+  download_url: "https://files.grouplens.org/datasets/movielens/ml-latest-small.zip"
+  output_filename: "ml-latest-small.zip"
+  dataset_dir: "../data/raw"
+  extract_after_download: true
