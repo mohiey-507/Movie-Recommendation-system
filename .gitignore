@@ -215,3 +215,6 @@ models/
 # Configuration files
 config/local_config.yaml
 config/kaggle_config.yaml
+
+# MacOS .DS_Store files 
+.DS_Store
