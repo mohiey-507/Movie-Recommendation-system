@@ -209,6 +209,9 @@ __marimo__/
 # Data files
 data/
 
+# Model artifacts
+models/
+
 # Configuration files
 config/local_config.yaml
 config/kaggle_config.yaml
