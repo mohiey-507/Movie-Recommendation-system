@@ -1,1 +1,1 @@
-from helpers import get_device
+from .helpers import get_device
