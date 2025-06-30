@@ -1,2 +1,2 @@
 from .datasets import CollaborativeDataset
-from .processors import CollaborativeProcessor
+from .data_module import load_collab_data
