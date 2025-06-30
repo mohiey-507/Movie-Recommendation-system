@@ -210,7 +210,7 @@ __marimo__/
 /data/
 
 # Model artifacts
-models/
+/models/
 
 # Configuration files
 config/local_config.yaml
