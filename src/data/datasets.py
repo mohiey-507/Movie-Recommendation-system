@@ -20,12 +20,13 @@ class CollaborativeDataset(Dataset):
 
 
 class ContentDataset(Dataset):
-    def __init__(self, df, u2i, m2i, genres_mat, tags_mat, movie_avg, user_avg):
+    def __init__(self, df, u2i, m2i, genres_mat, user_genres_mat, movie_avg, user_avg):
         self.user_idx  = torch.tensor(df["userId"].map(u2i).values, dtype=torch.long)
         self.movie_idx = torch.tensor(df["movieId"].map(m2i).values, dtype=torch.long)
         self.rating    = torch.tensor(df["rating"].values, dtype=torch.float32)
+
         self.genres_mat = genres_mat
-        self.tags_mat   = tags_mat
+        self.user_genres_mat  = user_genres_mat
         self.movie_avg  = movie_avg
         self.user_avg   = user_avg
 
@@ -34,11 +35,13 @@ class ContentDataset(Dataset):
 
     def __getitem__(self, idx):
         m_idx = self.movie_idx[idx]
+        u_idx = self.user_idx[idx]
         return {
-            'user':      self.user_idx[idx],
-            'genres':    self.genres_mat[m_idx],
-            'tags':      self.tags_mat[m_idx],
-            'movie_avg': self.movie_avg[m_idx],
-            'user_avg':  self.user_avg[self.user_idx[idx]],
-            'rating':    self.rating[idx]
+            "user":      u_idx,
+            "movie":     m_idx,
+            "genres":    self.genres_mat[m_idx],
+            "user_fav":  self.user_genres_mat[u_idx],
+            "movie_avg": self.movie_avg[m_idx],
+            "user_avg":  self.user_avg[u_idx],
+            "rating":    self.rating[idx],
         }

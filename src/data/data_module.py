@@ -1,23 +1,17 @@
 from pathlib import Path
-from dataclasses import dataclass
 
 import torch
 import pandas as pd
-from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 from src import get_device
-from .datasets import CollaborativeDataset
+from .datasets import (
+    CollaborativeDataset, ContentDataset
+)
+from .data_class import (
+    CollabData, ContentData
+)
 
-@dataclass
-class CollabData:
-    train_ds: Dataset
-    val_ds: Dataset
-    movie_avg: torch.Tensor
-    num_users: int
-    num_movies: int
-    movies_df: pd.DataFrame
-    ratings_df: pd.DataFrame
 
 def load_collab_data(
     data_dir: str,
@@ -58,5 +52,99 @@ def load_collab_data(
         num_users=num_users,
         num_movies=num_movies,
         movies_df=movies,
+        ratings_df=ratings,
+    )
+
+
+def load_content_data(
+    data_dir: str,
+    test_size: float,
+    seed: int,
+    max_g: int = 5,
+    user_fav_k: int = 7,
+    device: torch.device = None
+) -> ContentData:
+    device = device or get_device()
+    data_dir = Path(data_dir)
+
+    ratings = pd.read_csv(data_dir / "ratings.csv").drop(columns=["timestamp"])
+
+    # Average tensors
+    movie_avg = torch.tensor(
+        ratings.groupby("movieId")["rating"].mean().values,
+        dtype=torch.float32, device=device
+    )
+    user_avg = torch.tensor(
+        ratings.groupby("userId")["rating"].mean().values,
+        dtype=torch.float32, device=device
+    )
+
+    # Index mappings
+    users      = sorted(ratings["userId"].unique())
+    movies_ids = sorted(ratings["movieId"].unique())
+    user2idx   = {u: i for i, u in enumerate(users)}
+    movie2idx  = {m: i for i, m in enumerate(movies_ids)}
+    num_movies = len(movies_ids)
+    num_users  = len(users)
+
+    # Movie genres
+    movies_df       = pd.read_csv(data_dir / "movies.csv")
+    movies_df["genres"] = movies_df["genres"].str.split("|")
+    all_genres      = sorted({g for sub in movies_df["genres"] for g in sub})
+    genre2idx       = {g: i for i, g in enumerate(all_genres, start=1)}
+    num_genres      = len(genre2idx) + 1
+
+    # Build genres_mat: (num_movies, max_g)
+    genres_mat = torch.zeros((num_movies, max_g), dtype=torch.long)
+    for _, row in movies_df.iterrows():
+        mid = row["movieId"]
+        if mid not in movie2idx:
+            continue
+        i = movie2idx[mid]
+        g_idxs = [genre2idx[g] for g in row["genres"]][:max_g]
+        genres_mat[i, :len(g_idxs)] = torch.tensor(g_idxs, dtype=torch.long)
+
+    # User top‑k favorite genres: (num_users, user_fav_k)
+    user_genre_counts = {u: [] for u in users}
+    for _, row in ratings.iterrows():
+        uid, mid = row["userId"], row["movieId"]
+        if mid not in movie2idx: continue
+        g_list = movies_df.loc[movies_df.movieId==mid, "genres"].iloc[0]
+        user_genre_counts[uid].extend(g_list)
+
+    user_genres_mat = torch.zeros((len(users), user_fav_k), dtype=torch.long)
+    for u, lst in user_genre_counts.items():
+        idx = user2idx[u]
+        top_k = (
+            pd.Series(lst)
+            .map(genre2idx)
+            .value_counts()
+            .head(user_fav_k)
+            .index
+            .tolist()
+    )
+        user_genres_mat[idx, :len(top_k)] = torch.tensor(top_k, dtype=torch.long)
+
+    # Split & Wrap
+    train_df, val_df = train_test_split(ratings, test_size=test_size, random_state=seed)
+    train_ds = ContentDataset(train_df, user2idx, movie2idx,
+                genres_mat, user_genres_mat, movie_avg, user_avg)
+    val_ds   = ContentDataset(val_df,   user2idx, movie2idx,
+                genres_mat, user_genres_mat,movie_avg, user_avg)
+
+    return ContentData(
+        train_ds=train_ds,
+        val_ds=val_ds,
+        user2idx=user2idx,
+        movie2idx=movie2idx,
+        genre2idx=genre2idx,
+        genres_mat=genres_mat,
+        user_genres_mat=user_genres_mat,
+        movie_avg=movie_avg,
+        user_avg=user_avg,
+        num_users=num_users,
+        num_movies=num_movies,
+        num_genres=num_genres,
+        movies_df=movies_df,
         ratings_df=ratings,
     )
