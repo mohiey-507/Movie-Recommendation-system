@@ -21,6 +21,13 @@ def load_collab_data(
 ) -> CollabData:
     device = device or get_device()
     data_dir = Path(data_dir)
+    processed_dir = data_dir / "processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    processed_file = processed_dir / f"collab_data_{test_size}_{seed}.pt"
+
+    if processed_file.exists():
+        data = torch.load(processed_file)
+        return data.to(device)
 
     ratings = pd.read_csv(data_dir / "ratings.csv").drop(columns=["timestamp"])
     movies  = pd.read_csv(data_dir / "movies.csv").drop(columns=["genres"])
@@ -45,7 +52,7 @@ def load_collab_data(
     train_ds = CollaborativeDataset(train_df)
     val_ds   = CollaborativeDataset(val_df)
 
-    return CollabData(
+    data = CollabData(
         train_ds=train_ds,
         val_ds=val_ds,
         movie_avg=movie_avg,
@@ -54,6 +61,10 @@ def load_collab_data(
         movies_df=movies,
         ratings_df=ratings,
     )
+
+    torch.save(data, processed_file)
+
+    return data.to(device)
 
 
 def load_content_data(
@@ -66,6 +77,13 @@ def load_content_data(
 ) -> ContentData:
     device = device or get_device()
     data_dir = Path(data_dir)
+    processed_dir = data_dir / "processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    processed_file = processed_dir / f"content_data_{test_size}_{seed}_{max_g}_{user_fav_k}.pt"
+
+    if processed_file.exists():
+        data = torch.load(processed_file)
+        return data.to(device)
 
     ratings = pd.read_csv(data_dir / "ratings.csv").drop(columns=["timestamp"])
 
@@ -132,7 +150,7 @@ def load_content_data(
     val_ds   = ContentDataset(val_df,   user2idx, movie2idx,
                 genres_mat, user_genres_mat,movie_avg, user_avg)
 
-    return ContentData(
+    data = ContentData(
         train_ds=train_ds,
         val_ds=val_ds,
         user2idx=user2idx,
@@ -148,3 +166,7 @@ def load_content_data(
         movies_df=movies_df,
         ratings_df=ratings,
     )
+
+    torch.save(data, processed_file)
+
+    return data.to(device)
