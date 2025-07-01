@@ -21,12 +21,12 @@ def load_collab_data(
 ) -> CollabData:
     device = device or get_device()
     data_dir = Path(data_dir)
-    processed_dir = data_dir / "processed"
+    processed_dir = data_dir.parent / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
     processed_file = processed_dir / f"collab_data_{test_size}_{seed}.pt"
 
     if processed_file.exists():
-        data = torch.load(processed_file)
+        data = torch.load(processed_file, weights_only=False)
         return data.to(device)
 
     ratings = pd.read_csv(data_dir / "ratings.csv").drop(columns=["timestamp"])
@@ -77,12 +77,12 @@ def load_content_data(
 ) -> ContentData:
     device = device or get_device()
     data_dir = Path(data_dir)
-    processed_dir = data_dir / "processed"
+    processed_dir = data_dir.parent / "processed"
     processed_dir.mkdir(parents=True, exist_ok=True)
     processed_file = processed_dir / f"content_data_{test_size}_{seed}_{max_g}_{user_fav_k}.pt"
 
     if processed_file.exists():
-        data = torch.load(processed_file)
+        data = torch.load(processed_file, weights_only=False)
         return data.to(device)
 
     ratings = pd.read_csv(data_dir / "ratings.csv").drop(columns=["timestamp"])
