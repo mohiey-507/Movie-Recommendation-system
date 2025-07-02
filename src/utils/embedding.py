@@ -1,8 +1,6 @@
 from pathlib import Path
 
-import faiss
 import torch
-import numpy as np
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 
@@ -14,11 +12,11 @@ def embed_movie_overview(
     emb_dir = data_dir.parent / 'embeddings'
     emb_dir.mkdir(parents=True, exist_ok=True)
 
-    emb_path = emb_dir / 'overview_emb.pt'
+    emb_path = emb_dir / f'overview_emb_{sbert_model}.pt'
 
     # If embeddings already exist, load and return
     if emb_path.exists():
-        overview_feats = torch.load(emb_path)
+        overview_feats = torch.load(emb_path, weights_only=False)
         embed_dim = overview_feats.shape[1]
         return overview_feats, embed_dim
 
