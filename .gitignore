@@ -221,3 +221,6 @@ config/kaggle_config.yaml
 
 # Logs
 logs/
+
+# PyCharm
+.idea/

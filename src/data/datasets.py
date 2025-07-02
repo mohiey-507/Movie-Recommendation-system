@@ -45,3 +45,27 @@ class ContentDataset(Dataset):
             "user_avg":  self.user_avg[u_idx],
             "rating":    self.rating[idx],
         }
+
+
+class SequenceDataset(Dataset):
+    def __init__(self, df, max_seq_len: int):
+        self.hist = df['hist'].tolist()
+        self.target = df['target'].tolist()
+        self.rating = df['rating'].tolist()
+        self.max_seq_len = max_seq_len
+
+    def __len__(self):
+        return len(self.rating)
+
+    def __getitem__(self, idx):
+        hist = self.hist[idx]
+        L = len(hist)
+        pad = self.max_seq_len - L
+        hist_pad = [0] * pad + [int(m) for m in hist]
+        mask = [0] * pad + [1] * L
+        return {
+            'hist': torch.tensor(hist_pad, dtype=torch.long),
+            'mask': torch.tensor(mask, dtype=torch.float32),
+            'target': torch.tensor(int(self.target[idx]), dtype=torch.long),
+            'rating': torch.tensor(float(self.rating[idx]), dtype=torch.float32)
+        }
